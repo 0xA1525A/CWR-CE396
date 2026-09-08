@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS customers (
     first_name  VARCHAR(25) NOT NULL,
     last_name   VARCHAR(50) NOT NULL,
 
-    PRIMARY KEY (id)
+    CONSTRAINT pk_customers
+        PRIMARY KEY (id)
 );
 
 -- แยกตารางเพราะว่าลูกค้า 1 ท่าน มีได้มากกว่า 1 เบอร์
@@ -22,8 +23,12 @@ CREATE TABLE IF NOT EXISTS customer_tels (
     customer_id UUID        NOT NULL,
     tel         VARCHAR(15) NOT NULL,
 
-    PRIMARY KEY (id),
-    FOREIGN KEY (customer_id) REFERENCES customers(id)
+    CONSTRAINT pk_customer_tels
+        PRIMARY KEY (id),
+    CONSTRAINT fk_tels_customers
+        FOREIGN KEY (customer_id)
+            REFERENCES customers(id)
+            ON DELETE CASCADE
 );
 
 -- แยกตารางเพราะว่าไม่อยากให้ตารางข้อมูลผู้ใช้มันอ้วนเกิน
@@ -42,8 +47,12 @@ CREATE TABLE IF NOT EXISTS customer_addresses (
     province    VARCHAR(25) NOT NULL,
     zipcode     INTEGER     NOT NULL,
 
-    PRIMARY KEY (id),
-    FOREIGN KEY (customer_id) REFERENCES customers(id),
+    CONSTRAINT pk_customer_addresses
+        PRIMARY KEY (id),
+    CONSTRAINT fk_addresses_customers
+        FOREIGN KEY (customer_id)
+            REFERENCES customers(id)
+            ON DELETE CASCADE,
 
     -- บังคับว่าลูกค้า 1 ท่านจะใส่ที่อยู่แบบเดิมเป๊ะๆ ได้แค่ 1 ครั้งเท่านั้น
     UNIQUE (
@@ -70,15 +79,21 @@ CREATE TABLE IF NOT EXISTS pets (
     date_of_birth   DATE    NOT NULL,
     -- ตามโจทย์บอกให้บอกอายุด้วย แต่ถ้าจะเก็บอายุเปล่าๆ มันดูแปลก เลยเก็บเป็นวันเดือนปีเกิดแทน :)
 
-    PRIMARY KEY (id),
-    FOREIGN KEY (customer_id) REFERENCES customers(id),
-    UNIQUE (
-        customer_id,
-        name,
-        species,
-        breed,
-        date_of_birth
-    )
+    CONSTRAINT pk_pets
+        PRIMARY KEY (id),
+    CONSTRAINT fk_pets_customers
+        FOREIGN KEY (customer_id)
+            REFERENCES customers(id)
+            ON DELETE RESTRICT,
+
+    CONSTRAINT uq_pets_customers
+        UNIQUE (
+            customer_id,
+            name,
+            species,
+            breed,
+            date_of_birth
+        )
 );
 
 -- ตารางเก็บข้อมูลพนักงานใน vet
@@ -88,8 +103,9 @@ CREATE TABLE IF NOT EXISTS staff (
     last_name   VARCHAR(50) NOT NULL,
     proficiency VARCHAR(20) NOT NULL,
 
-    PRIMARY KEY (id),
-    CONSTRAINT proficiency_limited_to_presets
+    CONSTRAINT pk_staff
+        PRIMARY KEY (id),
+    CONSTRAINT ck_proficiency_limited_to_presets
         CHECK (
             proficiency IN (
                 'general',
@@ -113,15 +129,22 @@ CREATE TABLE IF NOT EXISTS staff (
 -- ตารางบันทึกข้อมูลการเข้ารักษาแต่ละครั้ง
 CREATE TABLE IF NOT EXISTS visits (
     id          BIGINT      GENERATED ALWAYS AS IDENTITY,
-    staff_id    UUID        NOT NULL,
+    staff_id    UUID,
     pet_id      UUID        NOT NULL,
 
     symptoms    VARCHAR(500)    NOT NULL,
     date_time   TIMESTAMP   NOT NULL,
 
-    PRIMARY KEY (id),
-    FOREIGN KEY (staff_id) REFERENCES staff(id),
-    FOREIGN KEY (pet_id)   REFERENCES pets(id)
+    CONSTRAINT pk_visits
+        PRIMARY KEY (id),
+    CONSTRAINT fk_visits_staff
+        FOREIGN KEY (staff_id)
+            REFERENCES staff(id)
+            ON DELETE SET NULL,
+    CONSTRAINT fk_visits_pets
+        FOREIGN KEY (pet_id)
+            REFERENCES pets(id)
+            ON DELETE CASCADE
 );
 
 -- ตารางเก็บจำนวนสินค้าใน stock ว่าอะไรมีกี่อย่าง
@@ -142,15 +165,16 @@ CREATE TABLE IF NOT EXISTS inventory (
     price       NUMERIC(10, 2)  NOT NULL,
     expiry_date TIMESTAMP   NOT NULL,
 
-    PRIMARY KEY (id),
-    CONSTRAINT packaged_item_must_have_content_quantity
+    CONSTRAINT pk_inventory_id
+        PRIMARY KEY (id),
+    CONSTRAINT ck_packaged_item_must_have_content_quantity
         CHECK (
             -- บังคับให้ต้องมีจำนวนยาต่อกล่องถ้าเป็นกล่อง และจำนวนยาต่อกล่องต้อง null ถ้านับเป็นเม็ด
             (is_whole_package = TRUE AND content_quantity IS NOT NULL)
             OR
             (is_whole_package = FALSE AND content_quantity IS NULL)
         ),
-    CONSTRAINT category_limited_to_presets
+    CONSTRAINT ck_category_limited_to_presets
         CHECK (
             category IN (
                 'painkiller',
@@ -177,7 +201,14 @@ CREATE TABLE IF NOT EXISTS prescriptions (
 
     quantity    INT         NOT NULL,
 
-    PRIMARY KEY (visit_id, item_id),
-    FOREIGN KEY (visit_id) REFERENCES visits(id),
-    FOREIGN KEY (item_id)  REFERENCES inventory(id)
+    CONSTRAINT pk_prescriptions
+        PRIMARY KEY (visit_id, item_id),
+    CONSTRAINT fk_prescriptions_visits
+        FOREIGN KEY (visit_id)
+            REFERENCES visits(id)
+            ON DELETE CASCADE,
+    CONSTRAINT fk_prescriptions_inventory
+        FOREIGN KEY (item_id)
+            REFERENCES inventory(id)
+            ON DELETE RESTRICT
 );
