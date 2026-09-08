@@ -3,6 +3,11 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 --# DROP DATABASE IF EXISTS vet_db;
 --# CREATE DATABASE vet_db;
 
+-- THIS WILL DELETE EVERY SINGLE TABLE IN THE DATABASE. BE AWARE, NATTHAKIT.
+--# DROP SCHEMA public CASCADE;
+--# CREATE SCHEMA public;
+--# GRANT ALL ON SCHEMA public TO public; -- Restores default permissions
+
 --$ \c vet_db
 
 -- ตารางนี้เก็บข้อมูลลูกค้าเฉพาะจำเป็น
