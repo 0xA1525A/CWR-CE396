@@ -6,9 +6,20 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- THIS WILL DELETE EVERY SINGLE TABLE IN THE DATABASE. BE AWARE, NATTHAKIT.
 --# DROP SCHEMA public CASCADE;
 --# CREATE SCHEMA public;
---# GRANT ALL ON SCHEMA public TO public; -- Restores default permissions
+--# GRANT ALL ON SCHEMA public TO public;
 
 --$ \c vet_db
+
+DROP TABLE IF EXISTS prescriptions       CASCADE;
+DROP TABLE IF EXISTS visits              CASCADE;
+DROP TABLE IF EXISTS staff_proficiencies CASCADE;
+DROP TABLE IF EXISTS proficiencies       CASCADE;
+DROP TABLE IF EXISTS inventory           CASCADE;
+DROP TABLE IF EXISTS pets                CASCADE;
+DROP TABLE IF EXISTS customer_addresses  CASCADE;
+DROP TABLE IF EXISTS customer_tels       CASCADE;
+DROP TABLE IF EXISTS staff               CASCADE;
+DROP TABLE IF EXISTS customers           CASCADE;
 
 -- ตารางนี้เก็บข้อมูลลูกค้าเฉพาะจำเป็น
 CREATE TABLE IF NOT EXISTS customers (
@@ -106,13 +117,19 @@ CREATE TABLE IF NOT EXISTS staff (
     id          UUID        NOT NULL DEFAULT gen_random_uuid(),
     first_name  VARCHAR(25) NOT NULL,
     last_name   VARCHAR(50) NOT NULL,
-    proficiency VARCHAR(20) NOT NULL,
 
     CONSTRAINT pk_staff
-        PRIMARY KEY (id),
+        PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS proficiencies (
+    name        VARCHAR(20) NOT NULL,
+
+    CONSTRAINT pk_proficiencies
+        PRIMARY KEY (name),
     CONSTRAINT ck_proficiency_limited_to_presets
         CHECK (
-            proficiency IN (
+            name IN (
                 'general',
                 'internal',
                 'surgery',
@@ -129,6 +146,20 @@ CREATE TABLE IF NOT EXISTS staff (
                 'behaviour'
             )
         )
+);
+
+CREATE TABLE IF NOT EXISTS staff_proficiencies (
+    staff_id        UUID        NOT NULL,
+    proficiency     VARCHAR(20) NOT NULL,
+
+    CONSTRAINT pk_staff_proficiencies
+        PRIMARY KEY (staff_id, proficiency),
+    CONSTRAINT fk_proficiencies_staff
+        FOREIGN KEY (staff_id)
+            REFERENCES staff(id),
+    CONSTRAINT fk_proficiencies_proficiency
+        FOREIGN KEY (proficiency)
+            REFERENCES proficiencies(name)
 );
 
 -- ตารางบันทึกข้อมูลการเข้ารักษาแต่ละครั้ง
