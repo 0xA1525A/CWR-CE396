@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS staff (
         PRIMARY KEY (id)
 );
 
+-- ตารางเก็บข้อมูลความเป็นไปได้ของความถนัดของพนักงาน
 CREATE TABLE IF NOT EXISTS proficiencies (
     name        VARCHAR(20) NOT NULL,
 
@@ -148,6 +149,7 @@ CREATE TABLE IF NOT EXISTS proficiencies (
         )
 );
 
+-- ตารางอ่อนเชื่อมความถนัดและพนักงานเข้าด้วยกัน
 CREATE TABLE IF NOT EXISTS staff_proficiencies (
     staff_id        UUID        NOT NULL,
     proficiency     VARCHAR(20) NOT NULL,
@@ -156,10 +158,12 @@ CREATE TABLE IF NOT EXISTS staff_proficiencies (
         PRIMARY KEY (staff_id, proficiency),
     CONSTRAINT fk_proficiencies_staff
         FOREIGN KEY (staff_id)
-            REFERENCES staff(id),
+            REFERENCES staff(id)
+            ON DELETE CASCADE,
     CONSTRAINT fk_proficiencies_proficiency
         FOREIGN KEY (proficiency)
             REFERENCES proficiencies(name)
+            ON DELETE CASCADE
 );
 
 -- ตารางบันทึกข้อมูลการเข้ารักษาแต่ละครั้ง
@@ -195,9 +199,9 @@ CREATE TABLE IF NOT EXISTS inventory (
     -- whole | pkg | stk | con -> whole | pkg | stk |  con <- null เพราะเรานับยาเป็นเม็ดแทน ไม่ใช่กล่อง
     --  true |   1 |   1 |  50 -> false |   0 |  50 | null
     is_whole_package    BOOLEAN NOT NULL,
-    stock_quantity      INT NOT NULL DEFAULT 0,
-    content_quantity    INT DEFAULT NULL,
-    usage_duration      INT NOT NULL DEFAULT 0,
+    stock_quantity      INTEGER NOT NULL DEFAULT 0,
+    content_quantity    INTEGER DEFAULT NULL,
+    usage_duration      INTEGER NOT NULL DEFAULT 0,
     price       NUMERIC(10, 2)  NOT NULL,
     expiry_date TIMESTAMP   NOT NULL,
 
@@ -235,7 +239,7 @@ CREATE TABLE IF NOT EXISTS prescriptions (
     visit_id    BIGINT      NOT NULL,
     item_id     BIGINT      NOT NULL,
 
-    quantity    INT         NOT NULL,
+    quantity    INTEGER     NOT NULL,
 
     CONSTRAINT pk_prescriptions
         PRIMARY KEY (visit_id, item_id),
